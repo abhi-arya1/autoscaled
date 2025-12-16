@@ -1,0 +1,25 @@
+{
+  "name": "autoscaled",
+  "version": "0.0.1",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/abhi-arya1/autoscaled.git"
+  },
+  "homepage": "https://github.com/abhi-arya1/autoscaled",
+  "author": "Abhigyan Arya <abhigyaa@uci.edu>",
+  "license": "ISC",
+  "description": "Build autoscaling servers with Cloudflare Workers",
+  "module": "dist/index.js",
+  "type": "module",
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "@cloudflare/containers": "^0.0.31",
+    "@cloudflare/workers-types": "^4.20251213.0",
+    "nanoid": "^5.1.6"
+  }
+}
