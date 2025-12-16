@@ -104,6 +104,8 @@ export interface AutoscalerConfig {
 > [!NOTE] AutoscaleD is still in development.
 > Here are some features to wrap up.
 
+- The `routeContainerRequest` function for automatic scaling
 - Container compute monitoring for balancing
+- Regional container placement regardless of Autoscaler location
 - More options for scaling, based on specific metrics or thresholds 
 - More container startup options
