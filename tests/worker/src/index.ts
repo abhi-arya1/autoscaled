@@ -34,10 +34,6 @@ export class MyAutoscaler extends Autoscaler<Env> {
     minInstances: 1,
     containerBinding: this.env.MY_CONTAINER as any,
   };
-
-  constructor(ctx: DurableObjectState, env: Env) {
-    super(ctx, env);
-  }
 }
 
 // Create Hono app with proper typing for Cloudflare Workers
