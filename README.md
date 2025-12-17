@@ -4,9 +4,6 @@ Automatically scale Cloudflare Containers based on compute, load, status, and mo
 
 ## Installation
 
-> [!WARNING] This package is not yet released.
-> This banner will be removed once the package is published to npm.
-
 ```shell
 npm install @abhi-arya1/autoscaled
 ```
