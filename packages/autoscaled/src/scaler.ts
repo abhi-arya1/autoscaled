@@ -102,31 +102,52 @@ export class Scaler {
             return false;
         }
 
-        // Check if any instance exceeds thresholds
+        const now = Date.now();
+        const cooldown = this.config.scaleUpCooldown ?? 60_000;
+
+        // Check if any instance is crossing thresholds (not already crossed recently)
         for (const instance of instances) {
+            // Check if instance is eligible (hasn't crossed recently)
+            const canCross =
+                !instance.threshold_crossed_at ||
+                now - new Date(instance.threshold_crossed_at).getTime() >=
+                    cooldown;
+
+            if (!canCross) {
+                continue;
+            }
+
+            // Check if exceeds thresholds
+            let exceedsThreshold = false;
+
             if (this.hasAllSpecificThresholds) {
                 const cpuThreshold = this.config.scaleThesholdCPU ?? 0;
-                const memoryThreshold =
-                    this.config.scaleThesholdMemoryMiB ?? 0;
+                const memoryThreshold = this.config.scaleThesholdMemoryMiB ?? 0;
                 const diskThreshold = this.config.scaleThesholdDiskGB ?? 0;
 
-                if (
+                exceedsThreshold =
                     instance.current_cpu > cpuThreshold ||
                     instance.current_memory_MiB > memoryThreshold ||
-                    instance.current_disk_GB > diskThreshold
-                ) {
-                    return true;
-                }
+                    instance.current_disk_GB > diskThreshold;
             } else if (this.config.scaleThreshold !== undefined) {
                 const threshold = this.config.scaleThreshold;
 
-                if (
+                exceedsThreshold =
                     instance.current_cpu > threshold ||
                     instance.current_memory_MiB > threshold ||
-                    instance.current_disk_GB > threshold
-                ) {
-                    return true;
-                }
+                    instance.current_disk_GB > threshold;
+            }
+
+            if (exceedsThreshold) {
+                // Mark this instance as having crossed
+                this.state.markThresholdCrossed(
+                    instance.name,
+                    new Date(now).toISOString(),
+                );
+                console.info(
+                    `Instance ${instance.name} crossed compute threshold (CPU: ${instance.current_cpu}%, Memory: ${instance.current_memory_MiB}%, Disk: ${instance.current_disk_GB}%)`,
+                );
+                return true;
             }
         }
 
@@ -261,13 +282,10 @@ export class Scaler {
             const scaleUpDisk = this.config.scaleThesholdDiskGB ?? 0;
 
             return {
-                cpu:
-                    this.config.scaleDownThresholdCPU ?? scaleUpCPU - 45,
+                cpu: this.config.scaleDownThresholdCPU ?? scaleUpCPU - 45,
                 memory:
-                    this.config.scaleDownThresholdMemory ??
-                    scaleUpMemory - 45,
-                disk:
-                    this.config.scaleDownThresholdDisk ?? scaleUpDisk - 45,
+                    this.config.scaleDownThresholdMemory ?? scaleUpMemory - 45,
+                disk: this.config.scaleDownThresholdDisk ?? scaleUpDisk - 45,
             };
         } else {
             const scaleUpThreshold = this.config.scaleThreshold ?? 75;

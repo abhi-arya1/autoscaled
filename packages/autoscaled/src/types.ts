@@ -2,7 +2,9 @@ import type { Container, State } from "@cloudflare/containers";
 
 export type GenericContainer<T = unknown> = Container<T>;
 export type ContainerStub<T = unknown> = DurableObjectStub<GenericContainer<T>>;
-export type ContainerNamespace<T = unknown> = DurableObjectNamespace<GenericContainer<T>>;
+export type ContainerNamespace<T = unknown> = DurableObjectNamespace<
+    GenericContainer<T>
+>;
 
 export interface InstanceRecord extends Record<string, string | number | null> {
     name: string;
@@ -18,6 +20,7 @@ export interface InstanceRecord extends Record<string, string | number | null> {
     draining_since: string | null; // ISO 8601
     health_check_failures: number;
     last_health_check: string | null; // ISO 8601
+    threshold_crossed_at: string | null; // ISO 8601
 }
 
 export type MonitorzData = {
@@ -183,20 +186,10 @@ export interface AutoscalerConfig {
      */
     healthCheckRetries?: number;
     /**
-     * Interval between health checks
-     * @default heartbeatInterval
-     */
-    healthCheckInterval?: number;
-    /**
      * Maximum time to wait for instance draining (milliseconds)
      * @default 60_000 (1 minute)
      */
     drainTimeout?: number;
-    /**
-     * Endpoint to ping for keep-alive requests
-     * @default monitoringEndpoint
-     */
-    keepAliveEndpoint?: string;
     /**
      * The endpoint to monitor the autoscaler's health
      * @default "/healthz"

@@ -1,6 +1,10 @@
 import { Container } from "@cloudflare/containers";
 import { Hono } from "hono";
-import { Autoscaler, ContainerNamespace, routeContainerRequest } from "autoscaled";
+import {
+    Autoscaler,
+    ContainerNamespace,
+    routeContainerRequest,
+} from "autoscaled";
 
 export class MyContainer extends Container<Env> {
     defaultPort = 8080;
@@ -49,8 +53,7 @@ export class MyAutoscaler extends Autoscaler<Env> {
     };
 
     constructor(ctx: DurableObjectState, env: Env) {
-        super(ctx, env);
-        this.container = env.MY_CONTAINER as unknown as ContainerNamespace<Env>;
+        super(ctx, env, env.MY_CONTAINER);
     }
 }
 

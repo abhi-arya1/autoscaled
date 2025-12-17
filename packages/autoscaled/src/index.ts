@@ -49,7 +49,6 @@ export const routeContainerRequest = async (
 
 export class Autoscaler<Env> extends DurableObject<Env> {
     container: ContainerNamespace<Env>;
-
     config: AutoscalerConfig = {
         instance: "standard-1",
         maxInstances: 10,
@@ -71,33 +70,23 @@ export class Autoscaler<Env> extends DurableObject<Env> {
     private router!: Router;
     private instanceManager!: InstanceManager<Env>;
 
-    protected get containerBinding(): ContainerNamespace<Env> {
-        if (!this.container) {
-            throw new Error(
-                "container must be provided in constructor. Override constructor in your subclass.",
-            );
-        }
-        return this.container;
-    }
-
     #getISO8601Now(): string {
         return new Date().toISOString();
     }
 
-    constructor(ctx: DurableObjectState, env: Env) {
+    constructor(ctx: DurableObjectState, env: Env, container: any) {
         super(ctx, env);
 
-        this.container = null as unknown as ContainerNamespace<Env>;
+        this.container = container;
 
-        this.state = new AutoscalerState(
-            ctx.storage.sql,
-            () => this.#getISO8601Now(),
+        this.state = new AutoscalerState(ctx.storage.sql, () =>
+            this.#getISO8601Now(),
         );
         this.scaler = new Scaler(this.state, this.config);
         this.router = new Router(this.state, this.config);
         this.instanceManager = new InstanceManager<Env>(
             this.state,
-            this.containerBinding,
+            this.container,
             this.config,
             () => this.#getISO8601Now(),
         );
@@ -186,8 +175,6 @@ export class Autoscaler<Env> extends DurableObject<Env> {
         ) {
             return await this.#getHealthz();
         }
-
-        console.log("numInstances", this.state.getInstanceCount());
 
         try {
             const instance = this.router.selectInstance();
@@ -293,7 +280,8 @@ export class Autoscaler<Env> extends DurableObject<Env> {
         if (this.state.tryReserveSlot()) {
             try {
                 await this.instanceManager.cleanupStaleInstances();
-                const newContainer = await this.instanceManager.createInstance();
+                const newContainer =
+                    await this.instanceManager.createInstance();
                 const newState = await newContainer.getState();
                 await this.#trackNewInstance(newContainer, newState, 0);
 
@@ -440,9 +428,7 @@ export class Autoscaler<Env> extends DurableObject<Env> {
 
         for (const instance of instances) {
             try {
-                const container = this.containerBinding.getByName(
-                    instance.name,
-                );
+                const container = this.container.getByName(instance.name);
 
                 await this.instanceManager.performHealthCheck(
                     container,

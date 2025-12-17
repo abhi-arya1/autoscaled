@@ -16,13 +16,13 @@ import { AutoscalerState } from "./state.js";
 export class InstanceManager<Env = unknown> {
     constructor(
         private state: AutoscalerState,
-        private containerBinding: ContainerNamespace<Env>,
+        private container: ContainerNamespace<Env>,
         private config: AutoscalerConfig,
         private getNow: () => string,
     ) {}
 
     async createInstance(): Promise<ContainerStub<Env>> {
-        const container = getContainerInstance(this.containerBinding, nanoid());
+        const container = getContainerInstance(this.container, nanoid());
         await container.startAndWaitForPorts();
         console.info(`Created instance ${this.getContainerName(container)}`);
         return container;
@@ -30,7 +30,7 @@ export class InstanceManager<Env = unknown> {
 
     async destroyInstance(name: string): Promise<void> {
         try {
-            const container = this.containerBinding.getByName(name);
+            const container = this.container.getByName(name);
             await container.destroy();
             this.state.removeInstance(name);
         } catch (error) {
@@ -119,21 +119,16 @@ export class InstanceManager<Env = unknown> {
             return;
         }
 
-        const keepAliveEndpoint =
-            this.config.keepAliveEndpoint ??
-            this.config.monitoringEndpoint ??
-            "/healthz";
+        const keepAliveEndpoint = this.config.monitoringEndpoint ?? "/healthz";
         const keepAliveUrl = keepAliveEndpoint.startsWith("http")
             ? keepAliveEndpoint
-            : `http://localhost:8080${keepAliveEndpoint}`;
+            : `http://container/${keepAliveEndpoint}`;
         const now = this.getNow();
 
         for (const instance of instances) {
             try {
-                const container = this.containerBinding.getByName(
-                    instance.name,
-                );
-                await container.containerFetch(keepAliveUrl);
+                const container = this.container.getByName(instance.name);
+                await container.fetch(keepAliveUrl);
 
                 this.state.updateHeartbeat(instance.name, now);
             } catch (error) {
@@ -149,7 +144,7 @@ export class InstanceManager<Env = unknown> {
         name: string,
     ): Promise<ContainerWithState<Env> | null> {
         try {
-            const container = this.containerBinding.getByName(name);
+            const container = this.container.getByName(name);
             const state = await container.getState();
             return { container, state };
         } catch {
@@ -180,9 +175,7 @@ export class InstanceManager<Env = unknown> {
             if (!instance.name) continue;
 
             try {
-                const container = this.containerBinding.getByName(
-                    instance.name,
-                );
+                const container = this.container.getByName(instance.name);
                 await container.getState(); // This will throw if container doesn't exist
             } catch {
                 console.warn(

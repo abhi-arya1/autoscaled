@@ -23,4 +23,4 @@ COPY monitor /monitor
 EXPOSE 8080 81
 
 # Use monitor in exec mode: monitor runs on port 81 and execs the server
-CMD ["/monitor", "-port", "81", "/server"]
+CMD ["/monitor", "/server"]

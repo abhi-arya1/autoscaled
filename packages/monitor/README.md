@@ -47,6 +47,14 @@ go build -o monitor main.go
 ./monitor python app.py
 ```
 
+To build for a specific platform, set the following variables:
+
+```bash
+GOOS=linux GOARCH=amd64 go build -o monitor main.go
+```
+
+Where `GOOS` and `GOARCH` are the operating system and architecture you want to build for.
+
 ## API
 
 **GET /monitorz** - System metrics:

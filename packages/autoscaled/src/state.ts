@@ -20,8 +20,8 @@ export class AutoscalerState {
     ): { previousRequests: number } {
         const healthyValue = healthy ? 1 : 0;
         const cursor = this.sql.exec<{ prev_requests: number }>(
-            `INSERT INTO instances (name, created_at, active_requests, current_cpu, current_memory_MiB, current_disk_GB, last_heartbeat, last_request_at, healthy, draining, health_check_failures)
-             VALUES (?, ?, ?, 0, 0, 0, ?, ?, ?, 0, 0)
+            `INSERT INTO instances (name, created_at, active_requests, current_cpu, current_memory_MiB, current_disk_GB, last_heartbeat, last_request_at, healthy, draining, health_check_failures, threshold_crossed_at)
+             VALUES (?, ?, ?, 0, 0, 0, ?, ?, ?, 0, 0, NULL)
              ON CONFLICT(name) DO UPDATE SET
                  active_requests = active_requests + ?,
                  last_heartbeat = ?,
@@ -29,7 +29,8 @@ export class AutoscalerState {
                  healthy = ?,
                  current_cpu = COALESCE(current_cpu, 0),
                  current_memory_MiB = COALESCE(current_memory_MiB, 0),
-                 current_disk_GB = COALESCE(current_disk_GB, 0)
+                 current_disk_GB = COALESCE(current_disk_GB, 0),
+                 threshold_crossed_at = COALESCE(threshold_crossed_at, NULL)
              RETURNING active_requests - ? as prev_requests`,
             name,
             now,
@@ -102,8 +103,8 @@ export class AutoscalerState {
     ): { previousRequests: number } {
         const healthyValue = healthy ? 1 : 0;
         const cursor = this.sql.exec<{ prev_requests: number }>(
-            `INSERT INTO instances (name, created_at, active_requests, current_cpu, current_memory_MiB, current_disk_GB, last_heartbeat, last_request_at, healthy, draining, health_check_failures)
-             VALUES (?, ?, ?, 0, 0, 0, ?, ?, ?, 0, 0)
+            `INSERT INTO instances (name, created_at, active_requests, current_cpu, current_memory_MiB, current_disk_GB, last_heartbeat, last_request_at, healthy, draining, health_check_failures, threshold_crossed_at)
+             VALUES (?, ?, ?, 0, 0, 0, ?, ?, ?, 0, 0, NULL)
              ON CONFLICT(name) DO UPDATE SET
                  active_requests = active_requests + ?,
                  last_heartbeat = ?,
@@ -111,7 +112,8 @@ export class AutoscalerState {
                  healthy = ?,
                  current_cpu = COALESCE(current_cpu, 0),
                  current_memory_MiB = COALESCE(current_memory_MiB, 0),
-                 current_disk_GB = COALESCE(current_disk_GB, 0)
+                 current_disk_GB = COALESCE(current_disk_GB, 0),
+                 threshold_crossed_at = COALESCE(threshold_crossed_at, NULL)
              RETURNING active_requests - ? as prev_requests`,
             name,
             now,
@@ -175,7 +177,9 @@ export class AutoscalerState {
         const cursor = this.sql.exec<{
             current_count: number;
             max_count: number;
-        }>(`SELECT current_count, max_count FROM instance_capacity WHERE id = 1`);
+        }>(
+            `SELECT current_count, max_count FROM instance_capacity WHERE id = 1`,
+        );
         const result = cursor.toArray()[0];
 
         return {
@@ -204,7 +208,9 @@ export class AutoscalerState {
         const cursor = this.sql.exec<{
             last_scale_up: string | null;
             last_scale_down: string | null;
-        }>(`SELECT last_scale_up, last_scale_down FROM scaling_state WHERE id = 1`);
+        }>(
+            `SELECT last_scale_up, last_scale_down FROM scaling_state WHERE id = 1`,
+        );
         const result = cursor.toArray()[0];
 
         return {
@@ -322,6 +328,14 @@ export class AutoscalerState {
         return result[0] ?? null;
     }
 
+    markThresholdCrossed(name: string, now: string): void {
+        this.sql.exec(
+            `UPDATE instances SET threshold_crossed_at = ? WHERE name = ?`,
+            now,
+            name,
+        );
+    }
+
     migrate(maxInstances: number): void {
         this.sql.exec(`
             CREATE TABLE IF NOT EXISTS instances (
@@ -337,7 +351,8 @@ export class AutoscalerState {
                 draining INTEGER DEFAULT 0,
                 draining_since TEXT,
                 health_check_failures INTEGER DEFAULT 0,
-                last_health_check TEXT
+                last_health_check TEXT,
+                threshold_crossed_at TEXT
             );
 
             CREATE TABLE IF NOT EXISTS scaling_state (
@@ -361,9 +376,9 @@ export class AutoscalerState {
 
         const existingCount =
             this.sql
-                .exec<{ count: number }>(
-                    "SELECT COUNT(*) as count FROM instances",
-                )
+                .exec<{
+                    count: number;
+                }>("SELECT COUNT(*) as count FROM instances")
                 .toArray()[0]?.count ?? 0;
 
         this.sql.exec(
