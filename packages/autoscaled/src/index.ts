@@ -48,6 +48,8 @@ export const routeContainerRequest = async (
 };
 
 export class Autoscaler<Env> extends DurableObject<Env> {
+    container: ContainerNamespace<Env>;
+
     config: AutoscalerConfig = {
         instance: "standard-1",
         maxInstances: 10,
@@ -70,12 +72,12 @@ export class Autoscaler<Env> extends DurableObject<Env> {
     private instanceManager!: InstanceManager<Env>;
 
     protected get containerBinding(): ContainerNamespace<Env> {
-        if (!this.config.containerBinding) {
+        if (!this.container) {
             throw new Error(
-                "containerBinding must be provided in config. Override config in your subclass.",
+                "container must be provided in constructor. Override constructor in your subclass.",
             );
         }
-        return this.config.containerBinding as ContainerNamespace<Env>;
+        return this.container;
     }
 
     #getISO8601Now(): string {
@@ -84,6 +86,8 @@ export class Autoscaler<Env> extends DurableObject<Env> {
 
     constructor(ctx: DurableObjectState, env: Env) {
         super(ctx, env);
+
+        this.container = null as unknown as ContainerNamespace<Env>;
 
         this.state = new AutoscalerState(
             ctx.storage.sql,

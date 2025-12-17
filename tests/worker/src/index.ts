@@ -1,6 +1,6 @@
 import { Container } from "@cloudflare/containers";
 import { Hono } from "hono";
-import { Autoscaler, routeContainerRequest } from "autoscaled";
+import { Autoscaler, ContainerNamespace, routeContainerRequest } from "autoscaled";
 
 export class MyContainer extends Container<Env> {
     defaultPort = 8080;
@@ -25,30 +25,32 @@ export class MyContainer extends Container<Env> {
 
 // Autoscaler configuration with threshold-based scaling
 export class MyAutoscaler extends Autoscaler<Env> {
-    get config() {
-        return {
-            instance: "standard-1" as const,
-            maxInstances: 5,
-            minInstances: 1,
-            containerBinding: this.env.MY_CONTAINER,
-            // Scaling thresholds
-            scaleThreshold: 75, // Scale up when any metric exceeds 75%
-            scaleDownThreshold: 30, // Scale down when all metrics below 30%
-            // Cooldown periods
-            scaleUpCooldown: 30_000, // 30 seconds
-            scaleDownCooldown: 60_000, // 60 seconds
-            // Request-based scaling
-            maxRequestsPerInstance: 10,
-            // Health check configuration
-            healthCheckRetries: 3,
-            // Monitoring
-            monitoringEndpoint: "/healthz",
-            monitorzURL: "http://localhost:81/monitorz",
-            keepAliveEndpoint: "/healthz",
-            // Heartbeat configuration
-            heartbeatInterval: 15_000, // 15 seconds
-            staleThreshold: 60_000, // 1 minute
-        };
+    config = {
+        instance: "standard-1" as const,
+        maxInstances: 5,
+        minInstances: 1,
+        // Scaling thresholds
+        scaleThreshold: 75, // Scale up when any metric exceeds 75%
+        scaleDownThreshold: 30, // Scale down when all metrics below 30%
+        // Cooldown periods
+        scaleUpCooldown: 30_000, // 30 seconds
+        scaleDownCooldown: 60_000, // 60 seconds
+        // Request-based scaling
+        maxRequestsPerInstance: 10,
+        // Health check configuration
+        healthCheckRetries: 3,
+        // Monitoring
+        monitoringEndpoint: "/healthz",
+        monitorzURL: "http://localhost:81/monitorz",
+        keepAliveEndpoint: "/healthz",
+        // Heartbeat configuration
+        heartbeatInterval: 15_000, // 15 seconds
+        staleThreshold: 60_000, // 1 minute
+    };
+
+    constructor(ctx: DurableObjectState, env: Env) {
+        super(ctx, env);
+        this.container = env.MY_CONTAINER as unknown as ContainerNamespace<Env>;
     }
 }
 
@@ -56,7 +58,6 @@ const app = new Hono<{
     Bindings: Env;
 }>();
 
-// Root endpoint - API documentation
 app.get("/", (c) => {
     return c.json({
         name: "Autoscaled Test Worker",

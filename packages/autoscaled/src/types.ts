@@ -102,11 +102,6 @@ export interface AutoscalerConfig {
      */
     instance: InstanceType;
     /**
-     * The *required* Workers Binding to your container class from wrangler.jsonc/toml
-     * This is marked as optional solely for development purposes.
-     */
-    containerBinding?: ContainerNamespace<any>;
-    /**
      * The maximum number of containers that can run
      * @default 10
      */
