@@ -1,6 +1,6 @@
 # AutoscaleD
 
-Automatically scale Cloudflare Containers based on compute, load, status, and more, for distributed applications on Cloudflare's edge network. 
+Automatically scale Cloudflare Containers based on compute, load, status, and more, for distributed applications on Cloudflare's edge network.
 
 ## Installation
 
@@ -24,13 +24,13 @@ Write your code:
 ```ts
 // Define your Container
 export class MyContainer extends Container<Env> {
-  // Port the container listens on (default: 8080)
-  defaultPort = 8080;
-  // Time before container sleeps due to inactivity (default: 30s)
-  sleepAfter = "2m";
-  envVars = {
-    MESSAGE: "I was passed in via the container class!",
-  };
+    // Port the container listens on (default: 8080)
+    defaultPort = 8080;
+    // Time before container sleeps due to inactivity (default: 30s)
+    sleepAfter = "2m";
+    envVars = {
+        MESSAGE: "I was passed in via the container class!",
+    };
 }
 
 // Import and Define your Autoscaler
@@ -38,25 +38,26 @@ export class MyContainer extends Container<Env> {
 import { Autoscaler, routeContainerRequest } from "@abhi-arya1/autoscaled";
 
 export class MyAutoscaler extends Autoscaler<Env> {
-  config = {
-    // See Instance Types for available options
-    // https://developers.cloudflare.com/containers/platform-details/limits/
-    instance: "standard-1",
-    maxInstances: 5,
-    minInstances: 1,
-    // The binding to your container class from wrangler.jsonc/toml
-    containerBinding: this.env.MY_CONTAINER as any,
-  };
+    config = {
+        // See Instance Types for available options
+        // https://developers.cloudflare.com/containers/platform-details/limits/
+        instance: "standard-1",
+        maxInstances: 5,
+        minInstances: 1,
+        // The binding to your container class from wrangler.jsonc/toml
+        containerBinding: this.env.MY_CONTAINER as any,
+    };
 }
 
 export default {
-  // Set up your fetch handler to use configured Servers
-  async fetch(request: Request, env: Env): Promise<Response> {
-    return (
-      (await routeContainerRequest(request, env)) ||
-      new Response("Not Found", { status: 404 })
-    );
-  }
+    // Set up your fetch handler to use configured server
+    // `env.AUTOSCALER` is the Wrangler binding to your Autoscaler class, such as MyAutoscaler above
+    async fetch(request: Request, env: Env): Promise<Response> {
+        return (
+            (await routeContainerRequest(request, env.AUTOSCALER)) ||
+            new Response("Not Found", { status: 404 })
+        );
+    },
 } satisfies ExportedHandler<Env>;
 ```
 
@@ -104,8 +105,4 @@ export interface AutoscalerConfig {
 > [!NOTE] AutoscaleD is still in development.
 > Here are some features to wrap up.
 
-- The `routeContainerRequest` function for automatic scaling
 - Container compute monitoring for balancing
-- Regional container placement regardless of Autoscaler location
-- More options for scaling, based on specific metrics or thresholds 
-- More container startup options

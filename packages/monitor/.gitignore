@@ -1,0 +1,6 @@
+monitor
+monitor.exe
+*.exe
+*.test
+*.out
+go.sum
