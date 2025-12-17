@@ -1,5 +1,5 @@
 {
-  "name": "autoscaled",
+  "name": "@abhi-arya1/autoscaled",
   "version": "0.0.1",
   "repository": {
     "type": "git",
@@ -8,7 +8,7 @@
   "homepage": "https://github.com/abhi-arya1/autoscaled",
   "author": "Abhigyan Arya <abhigyaa@uci.edu>",
   "license": "ISC",
-  "description": "Build autoscaling servers with Cloudflare Workers",
+  "description": "Build autoscaling container servers with Cloudflare Workers",
   "main": "./src/index.ts",
   "module": "./src/index.ts",
   "types": "./src/index.ts",

@@ -11,7 +11,7 @@
       },
     },
     "packages/autoscaled": {
-      "name": "autoscaled",
+      "name": "@abhi-arya1/autoscaled",
       "version": "0.0.1",
       "dependencies": {
         "@cloudflare/containers": "^0.0.31",
@@ -28,8 +28,8 @@
     "tests/worker": {
       "name": "containers-test-worker",
       "dependencies": {
+        "@abhi-arya1/autoscaled": "workspace:*",
         "@cloudflare/containers": "0.0.30",
-        "autoscaled": "workspace:*",
         "hono": "4.10.7",
       },
       "devDependencies": {
@@ -40,6 +40,8 @@
     },
   },
   "packages": {
+    "@abhi-arya1/autoscaled": ["@abhi-arya1/autoscaled@workspace:packages/autoscaled"],
+
     "@cloudflare/containers": ["@cloudflare/containers@0.0.31", "", {}, "sha512-zHxW6/JMzvK9To98OcNg2d3eiZUZRg11pARmQpJJyQdIQ0eQ/dh/Wpufx+HGd0k/xjMdrFP77YnOeopxdzsgng=="],
 
     "@cloudflare/kv-asset-handler": ["@cloudflare/kv-asset-handler@0.4.1", "", { "dependencies": { "mime": "^3.0.0" } }, "sha512-Nu8ahitGFFJztxUml9oD/DLb7Z28C8cd8F46IVQ7y5Btz575pvMY8AqZsXkX7Gds29eCKdMgIHjIvzskHgPSFg=="],
@@ -175,8 +177,6 @@
     "acorn": ["acorn@8.14.0", "", { "bin": { "acorn": "bin/acorn" } }, "sha512-cl669nCJTZBsL97OF4kUQm5g5hC2uihk0NxY3WENAC0TYdILVkAyHymAntgxGkl7K+t0cXIrH5siy5S4XkFycA=="],
 
     "acorn-walk": ["acorn-walk@8.3.2", "", {}, "sha512-cjkyv4OtNCIeqhHrfS81QWXoCBPExR/J62oyEqepVw8WaQeSqpW2uhuLPh1m9eWhDuOo/jUXVTlifvesOWp/4A=="],
-
-    "autoscaled": ["autoscaled@workspace:packages/autoscaled"],
 
     "blake3-wasm": ["blake3-wasm@2.1.5", "", {}, "sha512-F1+K8EbfOZE49dtoPtmxUQrpXaBIl3ICvasLh+nJta0xkz+9kF/7uet9fLnwKqhDrmj6g+6K3Tw9yQPUg2ka5g=="],
 

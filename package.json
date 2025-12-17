@@ -1,5 +1,5 @@
 {
-  "name": "repo",
+  "name": "autoscaled-monorepo",
   "private": true,
   "scripts": {
     "build": "turbo run build",
