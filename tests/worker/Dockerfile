@@ -18,7 +18,9 @@ RUN CGO_ENABLED=0 GOOS=linux go build -o /server
 FROM scratch
 COPY --from=build /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 COPY --from=build /server /server
-EXPOSE 8080
+# Copy pre-built monitor executable from local directory
+COPY monitor /monitor
+EXPOSE 8080 81
 
-# Run
-CMD ["/server"]
+# Use monitor in exec mode: monitor runs on port 81 and execs the server
+CMD ["/monitor", "-port", "81", "/server"]
