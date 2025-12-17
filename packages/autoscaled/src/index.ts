@@ -15,11 +15,11 @@ export type ContainerNamespace<T = unknown> = DurableObjectNamespace<
 >;
 
 export type MonitorzData = {
-     // Percentages on a 0-100 scale
+    // Percentages on a 0-100 scale
     cpu_usage: number;
     memory_usage: number;
     disk_usage: number;
-}
+};
 
 interface InstanceRecord extends Record<string, string | number | null> {
     name: string;
@@ -150,7 +150,7 @@ export interface AutoscalerConfig {
      */
     scaleThesholdDiskGB?: number;
     /**
-     * The overall threshold for scaling up a new instance 
+     * The overall threshold for scaling up a new instance
      * You can either use this to control all at once, or use the specific thresholds above to control each metric individually.
      * @default 75 (Percent)
      */
@@ -191,7 +191,7 @@ export class Autoscaler<Env> extends DurableObject<Env> {
         staleThreshold: 120_000,
         monitoringEndpoint: "/healthz",
         scaleThreshold: 75,
-        monitorzURL: "http://localhost:81/monitorz"
+        monitorzURL: "http://localhost:81/monitorz",
     };
 
     #hasSpecificThresholds: boolean = false;
@@ -218,14 +218,19 @@ export class Autoscaler<Env> extends DurableObject<Env> {
         return state.status === "running" || state.status === "healthy";
     }
 
-    async #getHealthz(): Promise<{ instanceCount: number; instances: InstanceRecord[] }> {
+    async #getHealthz(): Promise<{
+        instanceCount: number;
+        instances: InstanceRecord[];
+    }> {
         const instanceCount = await this.getInstanceCount();
-        const instances = this.ctx.storage.sql.exec<InstanceRecord>(`SELECT * FROM instances`).toArray();
+        const instances = this.ctx.storage.sql
+            .exec<InstanceRecord>(`SELECT * FROM instances`)
+            .toArray();
 
         return {
             instanceCount,
-            instances
-        }
+            instances,
+        };
     }
 
     async #removeInstance(
@@ -249,20 +254,22 @@ export class Autoscaler<Env> extends DurableObject<Env> {
     async #fetchMonitorz(container: ContainerStub<Env>): Promise<MonitorzData> {
         const url = this.config.monitorzURL ?? "http://localhost:81/monitorz";
         const response = await container.containerFetch(url);
-        
+
         if (!response.ok) {
-            throw new Error(`Failed to fetch monitorz data: ${response.status}`);
+            throw new Error(
+                `Failed to fetch monitorz data: ${response.status}`,
+            );
         }
-        
+
         // Server now returns numbers directly, no transformation needed
-        const data = await response.json() as MonitorzData;
+        const data = (await response.json()) as MonitorzData;
         return data;
     }
 
     async #updateInstanceMetrics(): Promise<void> {
         // Fetch all instances from database
         const cursor = this.ctx.storage.sql.exec<InstanceRecord>(
-            `SELECT name FROM instances WHERE healthy = 1`
+            `SELECT name FROM instances WHERE healthy = 1`,
         );
         const instances = cursor.toArray();
 
@@ -273,7 +280,9 @@ export class Autoscaler<Env> extends DurableObject<Env> {
         // Update metrics for each instance
         for (const instance of instances) {
             try {
-                const container = this.containerBinding.getByName(instance.name);
+                const container = this.containerBinding.getByName(
+                    instance.name,
+                );
                 const monitorzData = await this.#fetchMonitorz(container);
 
                 // Update database with current metrics (stored as percentages)
@@ -290,7 +299,10 @@ export class Autoscaler<Env> extends DurableObject<Env> {
                 );
             } catch (error) {
                 // Log error but continue with other instances
-                console.error(`Error updating metrics for instance ${instance.name}:`, error);
+                console.error(
+                    `Error updating metrics for instance ${instance.name}:`,
+                    error,
+                );
             }
         }
     }
@@ -309,7 +321,7 @@ export class Autoscaler<Env> extends DurableObject<Env> {
 
         // Fetch all instances with their current metrics
         const cursor = this.ctx.storage.sql.exec<InstanceRecord>(
-            `SELECT current_cpu, current_memory_MiB, current_disk_GB FROM instances WHERE healthy = 1`
+            `SELECT current_cpu, current_memory_MiB, current_disk_GB FROM instances WHERE healthy = 1`,
         );
         const instances = cursor.toArray();
 
@@ -351,7 +363,7 @@ export class Autoscaler<Env> extends DurableObject<Env> {
 
     async #scaleUpIfNeeded(): Promise<void> {
         const shouldScale = await this.#shouldScaleUp();
-        
+
         if (!shouldScale) {
             return; // No scaling needed
         }
@@ -360,7 +372,9 @@ export class Autoscaler<Env> extends DurableObject<Env> {
             const container = await this.createNewInstance();
             const state = await container.getState();
             await this.beforeRequest(container, state, 0);
-            console.log(`Scaled up: Created new instance ${this.#getContainerName(container)}`);
+            console.log(
+                `Scaled up: Created new instance ${this.#getContainerName(container)}`,
+            );
         } catch (error) {
             console.error("Error scaling up:", error);
             // Don't throw - allow scale-down to proceed even if scale-up fails
@@ -421,13 +435,13 @@ export class Autoscaler<Env> extends DurableObject<Env> {
     override async alarm(): Promise<void> {
         // Update metrics from all instances
         await this.#updateInstanceMetrics();
-        
+
         // Scale up if thresholds are exceeded
         await this.#scaleUpIfNeeded();
-        
+
         // Scale down stale/unhealthy instances
         await this.cleanupAndScaleDown();
-        
+
         // Schedule next alarm
         await this.scheduleAlarm();
     }
@@ -578,7 +592,10 @@ export class Autoscaler<Env> extends DurableObject<Env> {
     override async fetch(request: Request): Promise<Response> {
         const url = new URL(request.url);
 
-        if (url.pathname === this.config.monitoringEndpoint && request.method === "GET") {
+        if (
+            url.pathname === this.config.monitoringEndpoint &&
+            request.method === "GET"
+        ) {
             const healthz = await this.#getHealthz();
             return new Response(JSON.stringify(healthz), { status: 200 });
         }

@@ -50,16 +50,17 @@ go build -o monitor main.go
 ## API
 
 **GET /monitorz** - System metrics:
+
 ```json
 {
-  "cpu_usage": "45.2",
-  "memory_usage": "62.8",
-  "disk_usage": "34.1"
+    "cpu_usage": "45.2",
+    "memory_usage": "62.8",
+    "disk_usage": "34.1"
 }
 ```
+
 These are all percentages on a 0-100 scale.
 
 ## Requirements
 
 - Go 1.25 or later
-
